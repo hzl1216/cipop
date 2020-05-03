@@ -3,7 +3,7 @@
       <Nav></Nav>
     <div class='main'>
         <div class="content">
-      <a>protein</a>
+      <a>蛋白质</a>
     </div>
         <table class="table table-bordered table-hover table-condensed">
             <thead style="background-color:lightgray;">
@@ -13,7 +13,13 @@
             </thead>
             <tbody>
                 <tr v-for="item in items">
-                    <td v-for='value in item'>{{value}}</td>
+                    <td v-for='(value, key)  in item'>
+                      <div>
+                        <div  v-if= ' shows[key]==0'>{{value}}</div>
+                        <button v-if = 'shows[key]==1' @click='download1(item[key])'>link1</button>
+                        <button v-if = 'shows[key]==2' @click='download2(item[key])'>link2</button>
+                      </div>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -38,13 +44,13 @@ export default {
             Nav,
             Footer
         },
-  inject: ['reload'],
   data () {
          return {
             pageSize : 10, //每页显示20条数据
             currentPage : 1, //当前页码
             count : 0,
-            items: []
+            items: [],
+            shows: {'objectId':0,'TissueId':0, 'url':1, 'rawurl':2, 'id': 0}
       }
   },
    mounted() {
@@ -52,14 +58,36 @@ export default {
             this.getList()
         } ,
 
-//   created () {
-//       //this.$reqs就访问到了main.js中绑定的axios
-// 				this.instance.getIndividuals().then((res)=>{ 
-// 					//成功
-//                     this.items = res.data;
-// 				})
-//   },
   methods: {
+        download1 (path) {
+            let params = {
+                    params: {
+                        path: path
+                    }
+                };
+                console.log(params)
+                this.instance.download(params).then((res)=>{ 
+                  console.log(res.data)
+                  this.downloadfile(res.data,path.split("/").pop());
+                });
+        },
+        download2 (path) {
+            let a = document.createElement('a')
+            a.href =path
+            a.click();
+        },
+        downloadfile (data,fileName) {
+        if (!data) {
+            return
+        }
+        let url = window.URL.createObjectURL(new Blob([data]));
+        let link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = url;
+        link.setAttribute('download',fileName);
+        document.body.appendChild(link);
+        link.click();
+    },
         getList () {
                 let params = {
                     params: {
@@ -73,26 +101,14 @@ export default {
 					//成功
                      this.items = res.data.result;
                     this.count = res.data.count;
-				});
+        });
+            
+
             },
         pageChange (page) {
                 this.currentPage = page
                 this.getList()
             },
-   
-    // 文件超出个数限制时的钩子
-    deleteobject(item) {
-        this.$confirm('此操作将删除该个体和相关临床数据以及组学数据, 是否继续?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-        this.instance.deleteClinical(item.ClinicalId).then((res)=>{ 
-					//成功
-                    this.reload();
-                })
-        });
-    },
      mounted() {
             //请求第一页数据
             this.getList()
